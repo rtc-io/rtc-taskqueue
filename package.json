@@ -20,5 +20,10 @@
   "bugs": {
     "url": "https://github.com/rtc-io/rtc-taskqueue/issues"
   },
-  "homepage": "https://github.com/rtc-io/rtc-taskqueue"
+  "homepage": "https://github.com/rtc-io/rtc-taskqueue",
+  "dependencies": {
+    "priorityqueuejs": "^0.2.0",
+    "rtc-core": "^3.0.0",
+    "whisk": "^0.6.2"
+  }
 }

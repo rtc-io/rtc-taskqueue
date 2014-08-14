@@ -1,3 +1,4 @@
+var debug = require('cog/logger')('rtc-taskqueue');
 var zip = require('whisk/zip');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
@@ -35,6 +36,10 @@ module.exports = function(pc, opts) {
   // check for plugin usage
   var plugin = findPlugin((opts || {}).plugins);
 
+  function abortQueue(err) {
+    console.error(err);
+  }
+
   function applyCandidate(data, next) {
     var candidate = createIceCandidate(data);
     try {
@@ -54,12 +59,34 @@ module.exports = function(pc, opts) {
     return new RTCIceCandidate(data);
   }
 
-  function enqueue(type, handler, checks) {
-    queue.enqueue({
-      type: type,
-      fn: handler,
-      checks: [].concat(checks || [])
-    });
+  function enqueue(type, handler, opts) {
+    return function() {
+      debug('queueing: ' + type);
+
+      queue.enq({
+        args: [].slice.call(arguments),
+        type: type,
+        fn: handler,
+
+        // initilaise any checks that need to be done prior
+        // to the task executing
+        checks: [].concat((opts || {}).checks || []),
+
+        // initialise the pass and fail handlers
+        pass: (opts || {}).pass || function() {},
+        fail: (opts || {}).fail || abortQueue
+      });
+    };
+  }
+
+  function execMethod(task, next) {
+    var fn = pc[task.name];
+
+    if (typeof fn != 'function') {
+      return next(new Error('cannot call "' + task.name + '" on RTCPeerConnection'));
+    }
+
+    fn.apply(pc, task.args.concat([ task.pass, task.fail ]));
   }
 
   function isStable(pc) {
@@ -85,5 +112,15 @@ module.exports = function(pc, opts) {
   }
 
   // patch in the queue helper methods
-  queue.addIceCandidate = enqueue('candidate', applyCandidate, [ isStable ]);
+  queue.addIceCandidate = enqueue('candidate', applyCandidate, {
+    checks: [ isStable ]
+  });
+
+  queue.createOffer = enqueue('createOffer', execMethod, {
+    pass: queue.setLocalDescription
+  });
+
+  queue.setLocalDescription = enqueue('setLocalDescription', execMethod);
+
+  return queue;
 };

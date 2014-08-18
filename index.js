@@ -1,3 +1,4 @@
+var detect = require('rtc-core/detect');
 var debug = require('cog/logger')('rtc-taskqueue');
 var zip = require('whisk/zip');
 var findPlugin = require('rtc-core/plugin');
@@ -42,6 +43,13 @@ module.exports = function(pc, opts) {
   var checkQueueTimer = 0;
   var currentTask;
   var defaultFail = tq.emit.bind(tq, 'fail');
+
+  // initialise session description and icecandidate objects
+  var RTCSessionDescription = (opts || {}).RTCSessionDescription ||
+    detect('RTCSessionDescription');
+
+  var RTCIceCandidate = (opts || {}).RTCIceCandidate ||
+    detect('RTCIceCandidate');
 
   function abortQueue(err) {
     console.error(err);

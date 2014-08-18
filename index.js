@@ -124,16 +124,29 @@ module.exports = function(pc, opts) {
     return new RTCIceCandidate(data);
   }
 
+  function createSessionDescription(data) {
+    if (plugin && typeof plugin.createSessionDescription == 'function') {
+      return plugin.createSessionDescription(data);
+    }
+
+    return new RTCSessionDescription(data);
+  }
+
   function emitSdp(sdp) {
     tq.emit('sdp', pc.localDescription);
   }
 
   function enqueue(name, handler, opts) {
     return function() {
-      debug('queueing: ' + name, arguments);
+      var args = [].slice.call(arguments);
 
+      if (opts && typeof opts.processArgs == 'function') {
+        args = args.map(opts.processArgs);
+      }
+
+      debug('queueing: ' + name, args);
       queue.enq({
-        args: [].slice.call(arguments),
+        args: args,
         name: name,
         fn: handler,
 
@@ -208,6 +221,7 @@ module.exports = function(pc, opts) {
   });
 
   tq.setRemoteDescription = enqueue('setRemoteDescription', execMethod, {
+    processArgs: createSessionDescription,
     pass: completeConnection
   });
 

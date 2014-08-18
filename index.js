@@ -84,12 +84,13 @@ module.exports = function(pc, opts) {
     // peek at the next item on the queue
     var next = (! queue.isEmpty()) && (! currentTask) && queue.peek();
     var ready = next && testReady(next);
+    var retry = (! queue.isEmpty()) && isNotClosed(pc);
 
-//     console.log('checking queue: ', currentTask, next && next.name, ready);
+//     debug('checking queue: ', currentTask, next && next.name, ready);
 
     // if we don't have a task ready, then abort
     if (! ready) {
-      return triggerQueueCheck(100);
+      return retry && triggerQueueCheck(100);
     }
 
     // update the current task (dequeue)
@@ -106,12 +107,12 @@ module.exports = function(pc, opts) {
 
       // if errored, fail
       if (err) {
-        console.error( err);
+        console.error(err);
         return fail(err);
       }
 
       if (typeof pass == 'function') {
-        return pass.apply(null, [].slice.call(arguments, 1));
+        pass.apply(null, [].slice.call(arguments, 1));
       }
 
       triggerQueueCheck();
@@ -190,6 +191,14 @@ module.exports = function(pc, opts) {
     return pc.localDescription !== null || pc.remoteDescription !== null;
   }
 
+  function isNotNegotiating(pc) {
+    return pc.signalingState !== 'have-local-offer';
+  }
+
+  function isNotClosed(pc) {
+    return pc.signalingState !== 'closed';
+  }
+
   function isStable(pc) {
     return pc.signalingState === 'stable';
   }
@@ -221,7 +230,7 @@ module.exports = function(pc, opts) {
 
   // patch in the queue helper methods
   tq.addIceCandidate = enqueue('addIceCandidate', applyCandidate, {
-    checks: [ isStable, hasLocalOrRemoteDescription ]
+    checks: [ hasLocalOrRemoteDescription ]
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {
@@ -229,15 +238,18 @@ module.exports = function(pc, opts) {
   });
 
   tq.setRemoteDescription = enqueue('setRemoteDescription', execMethod, {
+    checks: [ isNotClosed ],
     processArgs: createSessionDescription,
     pass: completeConnection
   });
 
   tq.createOffer = enqueue('createOffer', execMethod, {
+    checks: [ isNotClosed, isNotNegotiating ],
     pass: tq.setLocalDescription
   });
 
   tq.createAnswer = enqueue('createAnswer', execMethod, {
+    checks: [ isNotClosed ],
     pass: tq.setLocalDescription
   });
 

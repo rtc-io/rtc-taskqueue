@@ -7,7 +7,7 @@ var queues = [];
 var offerSdp;
 var answerSdp;
 
-// require('cog/logger').enable('*');
+require('cog/logger').enable('*');
 
 test('can create connection:0', function(t) {
   t.plan(1);
@@ -31,6 +31,12 @@ test('connect icecandidate event listeners so candidates are exchanged', functio
   connections[0].onicecandidate = queues[1].addIceCandidate;
   connections[1].onicecandidate = queues[0].addIceCandidate;
   t.pass('applied');
+});
+
+test('create a datachannel on connection:0 (required by moz)', function(t) {
+  t.plan(1);
+  connections[0].createDataChannel('test');
+  t.pass('created data channel');
 });
 
 test('can create an offer using queue:0', function(t) {

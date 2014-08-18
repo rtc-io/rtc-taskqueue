@@ -7,7 +7,7 @@ var queues = [];
 var offerSdp;
 var answerSdp;
 
-require('cog/logger').enable('*');
+// require('cog/logger').enable('*');
 
 test('can create connection:0', function(t) {
   t.plan(1);

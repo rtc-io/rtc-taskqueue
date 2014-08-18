@@ -6,7 +6,6 @@ notifications:
   - damon.oehlman@nicta.com.au
   irc: irc.freenode.org#rtc.io
 
-
 env:
   global:
     - secure: V1fgQ60kCsrleQmXn7QOH/E+7q3svCybJzXy44cg+uSZ1CgNJrH+2iakx8sLnmyhbsbZvd0gCybl+5YMGO5uef7w6HkiwQew7XX6xaCJADQkvQEey+GJE9N5dTm9v4AG72Vl7+9nCmNDx52b1Pp7THsFQLtot8M/AqoKCB+B/js=
@@ -19,6 +18,13 @@ env:
     - BROWSER=firefox BVER=stable
     - BROWSER=firefox BVER=beta
     - BROWSER=firefox BVER=nightly
+
+matrix:
+  fast_finish: true
+
+  allowed_failures:
+    - env: BROWSER=chrome  BVER=unstable
+    - env: BROWSER=firefox BVER=nightly
 
 before_install:
   - mkdir -p .travis

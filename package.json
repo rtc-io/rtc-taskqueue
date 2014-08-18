@@ -24,6 +24,7 @@
   "homepage": "https://github.com/rtc-io/rtc-taskqueue",
   "dependencies": {
     "cog": "^1.0.0",
+    "eventemitter3": "^0.1.2",
     "priorityqueuejs": "^0.2.0",
     "rtc-core": "^3.0.0",
     "whisk": "^0.6.2"

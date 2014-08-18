@@ -161,7 +161,7 @@ module.exports = function(pc, opts) {
 
         // initilaise any checks that need to be done prior
         // to the task executing
-        checks: [].concat((opts || {}).checks || []),
+        checks: [ isNotClosed ].concat((opts || {}).checks || []),
 
         // initialise the pass and fail handlers
         pass: (opts || {}).pass,
@@ -238,18 +238,16 @@ module.exports = function(pc, opts) {
   });
 
   tq.setRemoteDescription = enqueue('setRemoteDescription', execMethod, {
-    checks: [ isNotClosed ],
     processArgs: createSessionDescription,
     pass: completeConnection
   });
 
   tq.createOffer = enqueue('createOffer', execMethod, {
-    checks: [ isNotClosed, isNotNegotiating ],
+    checks: [ isNotNegotiating ],
     pass: tq.setLocalDescription
   });
 
   tq.createAnswer = enqueue('createAnswer', execMethod, {
-    checks: [ isNotClosed ],
     pass: tq.setLocalDescription
   });
 

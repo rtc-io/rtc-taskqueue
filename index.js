@@ -2,6 +2,7 @@ var debug = require('cog/logger')('rtc-taskqueue');
 var zip = require('whisk/zip');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
+var EventEmitter = require('eventemitter3');
 
 var PRIORITY_LOW = 100;
 var PRIORITY_WAIT = 1000;
@@ -29,12 +30,18 @@ var DEFAULT_PRIORITIES = [
 module.exports = function(pc, opts) {
   // create the task queue
   var queue = new PriorityQueue(orderTasks);
+  var tq = new EventEmitter();
 
   // initialise task importance
   var priorities = (opts || {}).priorities || DEFAULT_PRIORITIES;
 
   // check for plugin usage
   var plugin = findPlugin((opts || {}).plugins);
+
+  // initialise state tracking
+  var checkQueueTimer = 0;
+  var currentTask;
+  var defaultFail = tq.emit.bind(tq, 'fail');
 
   function abortQueue(err) {
     console.error(err);
@@ -51,6 +58,38 @@ module.exports = function(pc, opts) {
     next();
   }
 
+  function checkQueue() {
+    // peek at the next item on the queue
+    var next = (! queue.isEmpty()) && (! currentTask) && queue.peek();
+    var ready = next && testReady(next);
+
+    // if we don't have a task ready, then abort
+    if (! ready) {
+      return;
+    }
+
+    // update the current task (dequeue)
+    currentTask = queue.deq();
+
+    // process the task
+    currentTask.fn(currentTask, function(err) {
+      var fail = currentTask.fail || defaultFail;
+      var pass = currentTask.pass;
+
+      // unset the current task
+      currentTask = null;
+
+      // if errored, fail
+      if (err) {
+        return fail(err);
+      }
+
+      if (typeof pass == 'function') {
+        pass.apply(null, [].slice.call(arguments, 1));
+      }
+    });
+  }
+
   function createIceCandidate(data) {
     if (plugin && typeof plugin.createIceCandidate == 'function') {
       return plugin.createIceCandidate(data);
@@ -59,13 +98,17 @@ module.exports = function(pc, opts) {
     return new RTCIceCandidate(data);
   }
 
-  function enqueue(type, handler, opts) {
+  function emitSdp(sdp) {
+    console.log('sdp generated: ', sdp);
+  }
+
+  function enqueue(name, handler, opts) {
     return function() {
-      debug('queueing: ' + type);
+      debug('queueing: ' + name, arguments);
 
       queue.enq({
         args: [].slice.call(arguments),
-        type: type,
+        name: name,
         fn: handler,
 
         // initilaise any checks that need to be done prior
@@ -73,20 +116,27 @@ module.exports = function(pc, opts) {
         checks: [].concat((opts || {}).checks || []),
 
         // initialise the pass and fail handlers
-        pass: (opts || {}).pass || function() {},
-        fail: (opts || {}).fail || abortQueue
+        pass: (opts || {}).pass,
+        fail: (opts || {}).fail
       });
+
+      triggerQueueCheck();
     };
   }
 
   function execMethod(task, next) {
     var fn = pc[task.name];
 
+    function success() {
+      next.apply(null, [null].concat([].slice.call(arguments)));
+    }
+
     if (typeof fn != 'function') {
       return next(new Error('cannot call "' + task.name + '" on RTCPeerConnection'));
     }
 
-    fn.apply(pc, task.args.concat([ task.pass, task.fail ]));
+    // invoke the function
+    fn.apply(pc, task.args.concat([ success, next ]));
   }
 
   function isStable(pc) {
@@ -111,16 +161,23 @@ module.exports = function(pc, opts) {
     });
   }
 
+  function triggerQueueCheck() {
+    clearTimeout(checkQueueTimer);
+    checkQueueTimer = setTimeout(checkQueue, 5);
+  }
+
   // patch in the queue helper methods
-  queue.addIceCandidate = enqueue('candidate', applyCandidate, {
+  tq.addIceCandidate = enqueue('candidate', applyCandidate, {
     checks: [ isStable ]
   });
 
-  queue.createOffer = enqueue('createOffer', execMethod, {
-    pass: queue.setLocalDescription
+  tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {
+    pass: emitSdp
   });
 
-  queue.setLocalDescription = enqueue('setLocalDescription', execMethod);
+  tq.createOffer = enqueue('createOffer', execMethod, {
+    pass: tq.setLocalDescription
+  });
 
-  return queue;
+  return tq;
 };

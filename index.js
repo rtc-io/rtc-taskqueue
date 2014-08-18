@@ -98,6 +98,7 @@ module.exports = function(pc, opts) {
 
       // if errored, fail
       if (err) {
+        debug('task failed: ', err);
         return fail(err);
       }
 

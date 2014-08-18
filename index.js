@@ -47,9 +47,23 @@ module.exports = function(pc, opts) {
     console.error(err);
   }
 
-  function applyCandidate(data, next) {
-    var candidate = createIceCandidate(data);
+  function applyCandidate(task, next) {
+    var candidate;
+    var data = task.args[0];
+
+    // if we have been passed an event, then extract the candidate from the data
+    if (data.srcElement && data.candidate) {
+      data = data.candidate;
+    }
+
+    // we have a null candidate, we have finished gathering candidates
+    if (! data.candidate) {
+      return next();
+    }
+
     try {
+      candidate = createIceCandidate(data);
+      pc.addIceCandidate(candidate);
     }
     catch (e) {
       console.warn('invalid ice candidate: ', e);
@@ -63,13 +77,16 @@ module.exports = function(pc, opts) {
     var next = (! queue.isEmpty()) && (! currentTask) && queue.peek();
     var ready = next && testReady(next);
 
+//     console.log('checking queue: ', currentTask, next && next.name, ready);
+
     // if we don't have a task ready, then abort
     if (! ready) {
-      return;
+      return triggerQueueCheck(100);
     }
 
     // update the current task (dequeue)
     currentTask = queue.deq();
+    debug('running ' + currentTask.name);
 
     // process the task
     currentTask.fn(currentTask, function(err) {
@@ -85,9 +102,17 @@ module.exports = function(pc, opts) {
       }
 
       if (typeof pass == 'function') {
-        pass.apply(null, [].slice.call(arguments, 1));
+        return pass.apply(null, [].slice.call(arguments, 1));
       }
+
+      triggerQueueCheck();
     });
+  }
+
+  function completeConnection() {
+    if (pc.signalingState === 'have-remote-offer') {
+      return tq.createAnswer();
+    }
   }
 
   function createIceCandidate(data) {
@@ -99,7 +124,7 @@ module.exports = function(pc, opts) {
   }
 
   function emitSdp(sdp) {
-    console.log('sdp generated: ', sdp);
+    tq.emit('sdp', pc.localDescription);
   }
 
   function enqueue(name, handler, opts) {
@@ -139,6 +164,10 @@ module.exports = function(pc, opts) {
     fn.apply(pc, task.args.concat([ success, next ]));
   }
 
+  function hasLocalOrRemoteDescription(pc) {
+    return pc.localDescription !== null || pc.remoteDescription !== null;
+  }
+
   function isStable(pc) {
     return pc.signalingState === 'stable';
   }
@@ -147,35 +176,45 @@ module.exports = function(pc, opts) {
     // apply each of the checks for each task
     var tasks = [a,b];
     var readiness = tasks.map(testReady);
-    var priorities = zip([ tasks, readiness ]).map(function(task, ready) {
-      var priority = priorities.indexOf(task.name);
+    var taskPriorities = tasks.map(zip(readiness)).map(function(args) {
+      var priority = priorities.indexOf(args[0].name);
 
-      return ready ? (priority >= 0 ? priority : PRIORITY_LOW) : PRIORITY_WAIT;
+      return args[1] ? (priority >= 0 ? priority : PRIORITY_LOW) : PRIORITY_WAIT;
     });
+
+    return taskPriorities[1] - taskPriorities[0];
   }
 
   // check whether a task is ready (does it pass all the checks)
   function testReady(task) {
-    return task.checks.filter(function(check) {
-      return check(pc, task);
-    });
+    return (task.checks || []).reduce(function(memo, check) {
+      return memo && check(pc, task);
+    }, true);
   }
 
-  function triggerQueueCheck() {
+  function triggerQueueCheck(wait) {
     clearTimeout(checkQueueTimer);
-    checkQueueTimer = setTimeout(checkQueue, 5);
+    checkQueueTimer = setTimeout(checkQueue, wait || 5);
   }
 
   // patch in the queue helper methods
-  tq.addIceCandidate = enqueue('candidate', applyCandidate, {
-    checks: [ isStable ]
+  tq.addIceCandidate = enqueue('addIceCandidate', applyCandidate, {
+    checks: [ isStable, hasLocalOrRemoteDescription ]
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {
     pass: emitSdp
   });
 
+  tq.setRemoteDescription = enqueue('setRemoteDescription', execMethod, {
+    pass: completeConnection
+  });
+
   tq.createOffer = enqueue('createOffer', execMethod, {
+    pass: tq.setLocalDescription
+  });
+
+  tq.createAnswer = enqueue('createAnswer', execMethod, {
     pass: tq.setLocalDescription
   });
 

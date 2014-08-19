@@ -59,11 +59,6 @@ module.exports = function(pc, opts) {
     var candidate;
     var data = task.args[0];
 
-    // if we have been passed an event, then extract the candidate from the data
-    if (data.srcElement && data.candidate) {
-      data = data.candidate;
-    }
-
     // we have a null candidate, we have finished gathering candidates
     if (! data.candidate) {
       return next();
@@ -74,7 +69,8 @@ module.exports = function(pc, opts) {
       pc.addIceCandidate(candidate);
     }
     catch (e) {
-      console.warn('invalid ice candidate: ', e);
+      console.warn('invalid candidate: ', candidate);
+      return next(e);
     }
 
     next();
@@ -101,13 +97,14 @@ module.exports = function(pc, opts) {
     currentTask.fn(currentTask, function(err) {
       var fail = currentTask.fail || defaultFail;
       var pass = currentTask.pass;
+      var taskName = currentTask.name;
 
       // unset the current task
       currentTask = null;
 
       // if errored, fail
       if (err) {
-        console.error(err);
+        console.error(taskName + ' task failed: ', err);
         return fail(err);
       }
 
@@ -187,7 +184,16 @@ module.exports = function(pc, opts) {
     fn.apply(pc, task.args.concat([ success, next ]));
   }
 
-  function hasLocalOrRemoteDescription(pc) {
+  function extractCandidateEventData(data) {
+    // if we have been passed an event, then extract the candidate from the data
+    if (data.srcElement && data.candidate) {
+      data = data.candidate;
+    }
+
+    return data;
+  }
+
+  function hasLocalOrRemoteDesc(pc, task) {
     return pc.localDescription !== null || pc.remoteDescription !== null;
   }
 
@@ -201,6 +207,14 @@ module.exports = function(pc, opts) {
 
   function isStable(pc) {
     return pc.signalingState === 'stable';
+  }
+
+  function isValidCandidate(pc, data) {
+    var candidate = data.args[0];
+
+    console.log(candidate);
+
+    return true;
   }
 
   function orderTasks(a, b) {
@@ -230,7 +244,8 @@ module.exports = function(pc, opts) {
 
   // patch in the queue helper methods
   tq.addIceCandidate = enqueue('addIceCandidate', applyCandidate, {
-    checks: [ hasLocalOrRemoteDescription ]
+    processArgs: extractCandidateEventData,
+    checks: [ hasLocalOrRemoteDesc, isValidCandidate ]
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {

@@ -8,6 +8,9 @@ var EventEmitter = require('eventemitter3');
 // some validation routines
 var checkCandidate = require('rtc-validator/candidate');
 
+// the sdp cleaner
+var sdpclean = require('rtc-sdpclean');
+
 var PRIORITY_LOW = 100;
 var PRIORITY_WAIT = 1000;
 
@@ -117,6 +120,20 @@ module.exports = function(pc, opts) {
 
       triggerQueueCheck();
     });
+  }
+
+  function cleansdp(desc) {
+    // ensure we have clean sdp
+    var sdpErrors = [];
+    var sdp = desc && sdpclean(desc.sdp, { collector: sdpErrors });
+
+    // if we don't have a match, log some info
+    if (desc && sdp !== desc.sdp) {
+      console.info('invalid lines removed from sdp: ', sdpErrors);
+      desc.sdp = sdp;
+    }
+
+    return desc;
   }
 
   function completeConnection() {
@@ -248,6 +265,7 @@ module.exports = function(pc, opts) {
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {
+    processArgs: cleansdp,
     pass: emitSdp
   });
 

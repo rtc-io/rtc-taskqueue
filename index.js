@@ -5,6 +5,9 @@ var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
 var EventEmitter = require('eventemitter3');
 
+// some validation routines
+var checkCandidate = require('rtc-validator/candidate');
+
 var PRIORITY_LOW = 100;
 var PRIORITY_WAIT = 1000;
 
@@ -210,11 +213,7 @@ module.exports = function(pc, opts) {
   }
 
   function isValidCandidate(pc, data) {
-    var candidate = data.args[0];
-
-    console.log(candidate);
-
-    return true;
+    return checkCandidate(data.args[0]).length === 0;
   }
 
   function orderTasks(a, b) {

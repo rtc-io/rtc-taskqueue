@@ -2,7 +2,7 @@
   "badges": {
     "nodeico": true,
     "travis": true,
-    "stability": "experimental"
+    "stability": "unstable"
   },
 
   "license": {

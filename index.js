@@ -1,5 +1,4 @@
 var detect = require('rtc-core/detect');
-var debug = require('cog/logger')('rtc-taskqueue');
 var zip = require('whisk/zip');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
@@ -23,6 +22,13 @@ var DEFAULT_PRIORITIES = [
   'createOffer'
 ];
 
+// define event mappings
+var METHOD_EVENTS = {
+  setLocalDescription: 'setlocaldesc',
+  createOffer: 'offer',
+  createAnswer: 'answer'
+};
+
 /**
   # rtc-taskqueue
 
@@ -37,7 +43,7 @@ var DEFAULT_PRIORITIES = [
 module.exports = function(pc, opts) {
   // create the task queue
   var queue = new PriorityQueue(orderTasks);
-  var tq = new EventEmitter();
+  var tq = require('mbus')('', opts.logger);
 
   // initialise task importance
   var priorities = (opts || {}).priorities || DEFAULT_PRIORITIES;
@@ -48,7 +54,7 @@ module.exports = function(pc, opts) {
   // initialise state tracking
   var checkQueueTimer = 0;
   var currentTask;
-  var defaultFail = tq.emit.bind(tq, 'fail');
+  var defaultFail = tq.bind(tq, 'fail');
 
   // initialise session description and icecandidate objects
   var RTCSessionDescription = (opts || {}).RTCSessionDescription ||
@@ -73,9 +79,10 @@ module.exports = function(pc, opts) {
     try {
       candidate = createIceCandidate(data);
       pc.addIceCandidate(candidate);
+      tq('ice.remote.applied', candidate);
     }
     catch (e) {
-      console.warn('invalid candidate: ', candidate);
+      tq('ice.remote.invalid', candidate);
       return next(e);
     }
 
@@ -159,7 +166,7 @@ module.exports = function(pc, opts) {
   }
 
   function emitSdp(sdp) {
-    tq.emit('sdp', pc.localDescription);
+    tq('sdp.local', pc.localDescription);
   }
 
   function enqueue(name, handler, opts) {
@@ -191,8 +198,15 @@ module.exports = function(pc, opts) {
 
   function execMethod(task, next) {
     var fn = pc[task.name];
+    var eventName = METHOD_EVENTS[task.name] || (task.name || '').toLowerCase();
+
+    function fail(err) {
+      tq.apply(tq, [ 'negotiate.error', task.name, err ].concat(task.args));
+      next(err);
+    }
 
     function success() {
+      tq.apply(tq, [ 'negotiate.progress', task.name ].concat(task.args));
       next.apply(null, [null].concat([].slice.call(arguments)));
     }
 
@@ -201,7 +215,8 @@ module.exports = function(pc, opts) {
     }
 
     // invoke the function
-    fn.apply(pc, task.args.concat([ success, next ]));
+    tq.apply(tq, ['negotiate.' + eventName].concat(task.args));
+    fn.apply(pc, task.args.concat([ success, fail ]));
   }
 
   function extractCandidateEventData(data) {

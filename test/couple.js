@@ -41,7 +41,7 @@ test('create a datachannel on connection:0 (required by moz)', function(t) {
 
 test('can create an offer using queue:0', function(t) {
   t.plan(1);
-  queues[0].once('sdp', function(sdp) {
+  queues[0].once('sdp.local', function(sdp) {
     t.ok(sdp, 'got sdp');
     offerSdp = sdp;
   });
@@ -51,7 +51,7 @@ test('can create an offer using queue:0', function(t) {
 
 test('can setRemoteDescription on connection:1', function(t) {
   t.plan(1);
-  queues[1].once('sdp', function(sdp) {
+  queues[1].once('sdp.local', function(sdp) {
     answerSdp = sdp;
     t.ok(sdp, 'got sdp');
   });

@@ -104,7 +104,7 @@ module.exports = function(pc, opts) {
 
     // update the current task (dequeue)
     currentTask = queue.deq();
-    debug('running ' + currentTask.name);
+    tq('taskqueue.next', currentTask.name);
 
     // process the task
     currentTask.fn(currentTask, function(err) {
@@ -177,7 +177,7 @@ module.exports = function(pc, opts) {
         args = args.map(opts.processArgs);
       }
 
-      debug('queueing: ' + name, args);
+      tq('taskqueue.push', name, args);
       queue.enq({
         args: args,
         name: name,

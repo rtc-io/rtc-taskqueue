@@ -24,7 +24,7 @@ var DEFAULT_PRIORITIES = [
 // define event mappings
 var METHOD_EVENTS = {
   setLocalDescription: 'setlocaldesc',
-  setRemoteDescription, 'setremotedesc',
+  setRemoteDescription: 'setremotedesc',
   createOffer: 'offer',
   createAnswer: 'answer'
 };

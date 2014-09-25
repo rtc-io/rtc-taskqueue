@@ -42,7 +42,7 @@ var METHOD_EVENTS = {
 module.exports = function(pc, opts) {
   // create the task queue
   var queue = new PriorityQueue(orderTasks);
-  var tq = require('mbus')('', opts.logger);
+  var tq = require('mbus')('', (opts || {}).logger);
 
   // initialise task importance
   var priorities = (opts || {}).priorities || DEFAULT_PRIORITIES;

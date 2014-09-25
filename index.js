@@ -203,7 +203,7 @@ module.exports = function(pc, opts) {
     }
 
     function success() {
-      tq.apply(tq, [ 'negotiate.progress', task.name ].concat(task.args));
+      tq.apply(tq, [ ['negotiate', eventName, 'ok'], task.name ].concat(task.args));
       next.apply(null, [null].concat([].slice.call(arguments)));
     }
 

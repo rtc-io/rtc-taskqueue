@@ -25,7 +25,7 @@
   "dependencies": {
     "cog": "^1.0.0",
     "eventemitter3": "^0.1.2",
-    "mbus": "^1.0.0",
+    "mbus": "^1.1.0",
     "priorityqueuejs": "^0.2.0",
     "rtc-core": "^3.1.0",
     "rtc-sdpclean": "^1.0.0",
@@ -33,7 +33,7 @@
     "whisk": "^0.6.2"
   },
   "devDependencies": {
-    "tape": "^2.14.0",
+    "tape": "^3.0.0",
     "testling": "^1.7.0"
   },
   "testling": {

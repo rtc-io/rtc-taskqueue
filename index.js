@@ -2,7 +2,6 @@ var detect = require('rtc-core/detect');
 var zip = require('whisk/zip');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
-var EventEmitter = require('eventemitter3');
 
 // some validation routines
 var checkCandidate = require('rtc-validator/candidate');

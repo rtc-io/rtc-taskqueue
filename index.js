@@ -29,6 +29,15 @@ var METHOD_EVENTS = {
   createAnswer: 'answer'
 };
 
+// track the various supported CreateOffer / CreateAnswer contraints
+// that we recognize and allow
+var OFFER_ANSWER_CONSTRAINTS = [
+  'offerToReceiveVideo',
+  'offerToReceiveAudio',
+  'voiceActivityDetection',
+  'iceRestart'
+];
+
 /**
   # rtc-taskqueue
 
@@ -197,6 +206,8 @@ module.exports = function(pc, opts) {
   function execMethod(task, next) {
     var fn = pc[task.name];
     var eventName = METHOD_EVENTS[task.name] || (task.name || '').toLowerCase();
+    var cbArgs = [ success, fail ];
+    var isOffer = task.name === 'createOffer';
 
     function fail(err) {
       tq.apply(tq, [ 'negotiate.error', task.name, err ].concat(task.args));
@@ -214,7 +225,10 @@ module.exports = function(pc, opts) {
 
     // invoke the function
     tq.apply(tq, ['negotiate.' + eventName].concat(task.args));
-    fn.apply(pc, task.args.concat([ success, fail ]));
+    fn.apply(
+      pc,
+      task.args.concat(cbArgs).concat(isOffer ? generateConstraints() : [])
+    );
   }
 
   function extractCandidateEventData(data) {
@@ -224,6 +238,49 @@ module.exports = function(pc, opts) {
     }
 
     return data;
+  }
+
+  function generateConstraints() {
+    var constraints = {};
+
+    function reformatConstraints() {
+      var tweaked = {};
+
+      Object.keys(constraints).forEach(function(param) {
+        var sentencedCased = param.charAt(0).toUpperCase() + param.substr(1);
+        tweaked[sentencedCased] = constraints[param];
+      });
+
+      // update the constraints to match the expected format
+      constraints = {
+        mandatory: tweaked
+      };
+    }
+
+    // TODO: customize behaviour based on offer vs answer
+
+    // pull out any valid
+    OFFER_ANSWER_CONSTRAINTS.forEach(function(param) {
+      var sentencedCased = param.charAt(0).toUpperCase() + param.substr(1);
+
+      // if we have no opts, do nothing
+      if (! opts) {
+        return;
+      }
+      // if the parameter has been defined, then add it to the constraints
+      else if (opts[param] !== undefined) {
+        constraints[param] = opts[param];
+      }
+      // if the sentenced cased version has been added, then use that
+      else if (opts[sentencedCased] !== undefined) {
+        constraints[param] = opts[sentencedCased];
+      }
+    });
+
+    // TODO: only do this for the older browsers that require it
+    reformatConstraints();
+
+    return constraints;
   }
 
   function hasLocalOrRemoteDesc(pc, task) {

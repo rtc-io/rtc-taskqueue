@@ -27,8 +27,7 @@
     "priorityqueuejs": "^0.2.0",
     "rtc-core": "^3.1.0",
     "rtc-sdpclean": "^1.0.0",
-    "rtc-validator": "^1.0.0",
-    "whisk": "^0.6.2"
+    "rtc-validator": "^1.0.0"
   },
   "devDependencies": {
     "tape": "^3.0.0",

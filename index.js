@@ -1,5 +1,4 @@
 var detect = require('rtc-core/detect');
-var zip = require('whisk/zip');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
 
@@ -288,10 +287,11 @@ module.exports = function(pc, opts) {
     // apply each of the checks for each task
     var tasks = [a,b];
     var readiness = tasks.map(testReady);
-    var taskPriorities = tasks.map(zip(readiness)).map(function(args) {
-      var priority = priorities.indexOf(args[0].name);
+    var taskPriorities = tasks.map(function(task, idx) {
+      var ready = readiness[idx];
+      var priority = ready && priorities.indexOf(task.name);
 
-      return args[1] ? (priority >= 0 ? priority : PRIORITY_LOW) : PRIORITY_WAIT;
+      return ready ? (priority >= 0 ? priority : PRIORITY_LOW) : PRIORITY_WAIT;
     });
 
     return taskPriorities[1] - taskPriorities[0];

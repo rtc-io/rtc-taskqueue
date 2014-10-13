@@ -95,11 +95,13 @@ module.exports = function(pc, opts) {
     var ready = next && testReady(next);
     var retry = (! queue.isEmpty()) && isNotClosed(pc);
 
-//     debug('checking queue: ', currentTask, next && next.name, ready);
+    // reset the queue timer
+    clearTimeout(checkQueueTimer);
+    checkQueueTimer = 0;
 
     // if we don't have a task ready, then abort
     if (! ready) {
-      return retry && triggerQueueCheck(100);
+      return retry && triggerQueueCheck();
     }
 
     // update the current task (dequeue)
@@ -302,9 +304,9 @@ module.exports = function(pc, opts) {
     }, true);
   }
 
-  function triggerQueueCheck(wait) {
-    clearTimeout(checkQueueTimer);
-    checkQueueTimer = setTimeout(checkQueue, wait || 5);
+  function triggerQueueCheck() {
+    if (checkQueueTimer) return;
+    checkQueueTimer = setTimeout(checkQueue, 50);
   }
 
   // patch in the queue helper methods

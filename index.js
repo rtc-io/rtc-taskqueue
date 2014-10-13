@@ -255,7 +255,15 @@ module.exports = function(pc, opts) {
   }
 
   function hasLocalOrRemoteDesc(pc, task) {
-    return pc.localDescription !== null || pc.remoteDescription !== null;
+    if (pc.__hasDesc) {
+      return true;
+    }
+
+    if (pc.localDescription !== null || pc.remoteDescription !== null) {
+      return pc.__hasDesc = true;
+    }
+
+    return false;
   }
 
   function isNotNegotiating(pc) {

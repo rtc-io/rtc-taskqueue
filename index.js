@@ -95,7 +95,6 @@ module.exports = function(pc, opts) {
     var retry = (! queue.isEmpty()) && isNotClosed(pc);
 
     // reset the queue timer
-    clearTimeout(checkQueueTimer);
     checkQueueTimer = 0;
 
     // if we don't have a task ready, then abort

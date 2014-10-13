@@ -256,15 +256,7 @@ module.exports = function(pc, opts) {
   }
 
   function hasLocalOrRemoteDesc(pc, task) {
-    if (pc.__hasDesc) {
-      return true;
-    }
-
-    if (pc.localDescription !== null || pc.remoteDescription !== null) {
-      return pc.__hasDesc = true;
-    }
-
-    return false;
+    return pc.__hasDesc || (pc.__hasDesc = !!pc.remoteDescription);
   }
 
   function isNotNegotiating(pc) {
@@ -280,7 +272,8 @@ module.exports = function(pc, opts) {
   }
 
   function isValidCandidate(pc, data) {
-    return checkCandidate(data.args[0]).length === 0;
+    return data.__valid ||
+      (data.__valid = checkCandidate(data.args[0]).length === 0);
   }
 
   function orderTasks(a, b) {

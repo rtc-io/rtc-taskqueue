@@ -55,6 +55,9 @@ module.exports = function(pc, opts) {
   var currentTask;
   var defaultFail = tq.bind(tq, 'fail');
 
+  // look for an sdpfilter function (allow slight mis-spellings)
+  var sdpFilter = (opts || {}).sdpfilter || (opts || {}).sdpFilter;
+
   // initialise session description and icecandidate objects
   var RTCSessionDescription = (opts || {}).RTCSessionDescription ||
     detect('RTCSessionDescription');
@@ -137,6 +140,11 @@ module.exports = function(pc, opts) {
     if (desc && sdp !== desc.sdp) {
       console.info('invalid lines removed from sdp: ', sdpErrors);
       desc.sdp = sdp;
+    }
+
+    // if a filter has been specified, then apply the filter
+    if (typeof sdpFilter == 'function') {
+      desc.sdp = sdpFilter(desc.sdp, pc, methodName);
     }
 
     return desc;

@@ -117,9 +117,6 @@ module.exports = function(pc, opts) {
       var pass = currentTask.pass;
       var taskName = currentTask.name;
 
-      // unset the current task
-      currentTask = null;
-
       // if errored, fail
       if (err) {
         console.error(taskName + ' task failed: ', err);
@@ -127,10 +124,13 @@ module.exports = function(pc, opts) {
       }
 
       if (typeof pass == 'function') {
-        pass.apply(null, [].slice.call(arguments, 1));
+        pass.apply(currentTask, [].slice.call(arguments, 1));
       }
 
-      triggerQueueCheck();
+      setTimeout(function() {
+        currentTask = null;
+        triggerQueueCheck();
+      }, 0);
     });
   }
 
@@ -175,8 +175,8 @@ module.exports = function(pc, opts) {
     return new RTCSessionDescription(data);
   }
 
-  function emitSdp(sdp) {
-    tq('sdp.local', pc.localDescription);
+  function emitSdp() {
+    tq('sdp.local', this.args[0]);
   }
 
   function enqueue(name, handler, opts) {

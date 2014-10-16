@@ -1,6 +1,6 @@
 {
   "name": "rtc-taskqueue",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "An asynchronous task queue that applies actions to an RTCPeerConnection in the most sensible order",
   "main": "index.js",
   "scripts": {

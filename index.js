@@ -28,6 +28,9 @@ var METHOD_EVENTS = {
   createAnswer: 'answer'
 };
 
+// define states in which we will attempt to finalize a connection on receiving a remote offer
+var VALID_RESPONSE_STATES = ['have-remote-offer', 'have-local-pranswer'];
+
 /**
   # rtc-taskqueue
 
@@ -151,7 +154,7 @@ module.exports = function(pc, opts) {
   }
 
   function completeConnection() {
-    if (pc.signalingState === 'have-remote-offer') {
+    if (VALID_RESPONSE_STATES.indexOf(pc.signalingState) >= 0) {
       return tq.createAnswer();
     }
   }

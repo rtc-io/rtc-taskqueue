@@ -73,25 +73,25 @@ module.exports = function(pc, opts) {
   }
 
   function applyCandidate(task, next) {
-    var candidate;
     var data = task.args[0];
+    var candidate = data && data.candidate && createIceCandidate(data);
+
+    function handleOk() {
+      tq('ice.remote.applied', candidate);
+      next();
+    }
+
+    function handleFail(err) {
+      tq('ice.remote.invalid', candidate);
+      next(err);
+    }
 
     // we have a null candidate, we have finished gathering candidates
-    if (! data.candidate) {
+    if (! candidate) {
       return next();
     }
 
-    try {
-      candidate = createIceCandidate(data);
-      pc.addIceCandidate(candidate);
-      tq('ice.remote.applied', candidate);
-    }
-    catch (e) {
-      tq('ice.remote.invalid', candidate);
-      return next(e);
-    }
-
-    next();
+    pc.addIceCandidate(candidate, handleOk, handleFail);
   }
 
   function checkQueue() {

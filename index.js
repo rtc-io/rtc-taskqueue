@@ -40,7 +40,11 @@ var VALID_RESPONSE_STATES = ['have-remote-offer', 'have-local-pranswer'];
 
   ## Example Usage
 
-  To be completed
+  For the moment, refer to the simple coupling test as an example of how to use
+  this package (see below):
+
+  <<< test/couple.js
+
 **/
 module.exports = function(pc, opts) {
   // create the task queue

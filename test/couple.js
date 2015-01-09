@@ -21,7 +21,14 @@ test('can create connection:1', function(t) {
 
 test('can wrap the connections in queues', function(t) {
   t.plan(2);
-  queues = connections.map(taskqueue);
+  queues = connections.map(function(conn) {
+    return taskqueue(conn, {
+      sdpfilter: function(sdp) {
+        return sdp;
+      }
+    });
+  });
+
   t.ok(queues[0]);
   t.ok(queues[1]);
 });

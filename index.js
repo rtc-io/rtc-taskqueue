@@ -261,7 +261,7 @@ module.exports = function(pc, opts) {
 
     // update known keys to match
     Object.keys(opts || {}).forEach(function(key) {
-      if (allowedKeys[key.toLowerCase]) {
+      if (allowedKeys[key.toLowerCase()]) {
         constraints[allowedKeys[key.toLowerCase()]] = opts[key];
       }
     });

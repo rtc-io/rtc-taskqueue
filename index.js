@@ -151,7 +151,7 @@ module.exports = function(pc, opts) {
 
     // if a filter has been specified, then apply the filter
     if (typeof sdpFilter == 'function') {
-      desc.sdp = sdpFilter(desc.sdp, pc, methodName);
+      desc.sdp = sdpFilter(desc.sdp, pc);
     }
 
     return desc;

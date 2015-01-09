@@ -239,7 +239,7 @@ module.exports = function(pc, opts) {
 
   function extractCandidateEventData(data) {
     // if we have been passed an event, then extract the candidate from the data
-    if (data.srcElement && data.candidate) {
+    if (data && data.candidate) {
       data = data.candidate;
     }
 

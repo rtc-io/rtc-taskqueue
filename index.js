@@ -238,8 +238,8 @@ module.exports = function(pc, opts) {
   }
 
   function extractCandidateEventData(data) {
-    // if we have been passed an event, then extract the candidate from the data
-    if (data && data.candidate) {
+    // extract nested candidate data (like we will see in an event being passed to this function)
+    while (data && data.candidate && data.candidate.candidate) {
       data = data.candidate;
     }
 

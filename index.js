@@ -225,7 +225,7 @@ module.exports = function(pc, opts) {
       next.apply(null, [null].concat([].slice.call(arguments)));
     }
 
-    if (typeof fn != 'function') {
+    if (! fn) {
       return next(new Error('cannot call "' + task.name + '" on RTCPeerConnection'));
     }
 

@@ -24,7 +24,7 @@
   "homepage": "https://github.com/rtc-io/rtc-taskqueue",
   "dependencies": {
     "mbus": "^2.0.0",
-    "priorityqueuejs": "^0.2.0",
+    "priorityqueuejs": "^1.0.0",
     "rtc-core": "^4.0.0",
     "rtc-sdpclean": "^1.0.0",
     "rtc-validator": "^1.0.0"

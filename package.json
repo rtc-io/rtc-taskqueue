@@ -30,6 +30,7 @@
     "rtc-validator": "^1.0.0"
   },
   "devDependencies": {
+    "brfs": "^1.4.0",
     "tape": "^3.0.0",
     "testling": "^1.7.0"
   },

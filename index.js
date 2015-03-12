@@ -7,6 +7,7 @@ var checkCandidate = require('rtc-validator/candidate');
 
 // the sdp cleaner
 var sdpclean = require('rtc-sdpclean');
+var parseSdp = require('rtc-sdp');
 
 var PRIORITY_LOW = 100;
 var PRIORITY_WAIT = 1000;
@@ -26,6 +27,10 @@ var METHOD_EVENTS = {
   setRemoteDescription: 'setremotedesc',
   createOffer: 'offer',
   createAnswer: 'answer'
+};
+
+var MEDIA_MAPPINGS = {
+  data: 'application'
 };
 
 // define states in which we will attempt to finalize a connection on receiving a remote offer
@@ -290,6 +295,18 @@ module.exports = function(pc, opts) {
       (data.__valid = checkCandidate(data.args[0]).length === 0);
   }
 
+  function isConnReadyForCandidate(pc, data) {
+    var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
+    var mediaTypes = sdp.getMediaTypes();
+    var candidateMedia = data.args[0] && data.args[0].sdpMid;
+
+    // remap media types as appropriate
+    candidateMedia = MEDIA_MAPPINGS[candidateMedia] || candidateMedia;
+
+    // the candidate is valid if we know about the media type
+    return mediaTypes.indexOf(candidateMedia) >= 0;
+  }
+
   function orderTasks(a, b) {
     // apply each of the checks for each task
     var tasks = [a,b];
@@ -319,7 +336,7 @@ module.exports = function(pc, opts) {
   // patch in the queue helper methods
   tq.addIceCandidate = enqueue('addIceCandidate', applyCandidate, {
     processArgs: extractCandidateEventData,
-    checks: [ hasLocalOrRemoteDesc, isValidCandidate ]
+    checks: [hasLocalOrRemoteDesc, isValidCandidate, isConnReadyForCandidate ]
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {

@@ -1,5 +1,6 @@
 var fs = require('fs');
 var test = require('tape');
+var detect = require('rtc-core/detect');
 var queue = require('..');
 var sdp = {
   nodata: fs.readFileSync(__dirname + '/sdp/nodata.sdp', 'utf8'),
@@ -44,11 +45,17 @@ test('applying the bad ice candidate fails', function(t) {
   try {
     candidate = new RTCIceCandidate(candidateData);
     t.pass('created candidate');
-    pc.addIceCandidate(candidate);
-    t.fail('applied candidate');
+    if (detect.moz) {
+      pc.addIceCandidate(candidate);
+      t.pass('applied candidate (which in mozilla is ok, apparently)');
+    }
+    else {
+      pc.addIceCandidate(candidate);
+      t.fail('applied candidate');
+    }
   }
   catch (e) {
-    t.pass('failed as expected');
+    t.pass('applying candidate failed as expected');
   }
 });
 

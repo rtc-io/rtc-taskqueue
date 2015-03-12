@@ -1,5 +1,6 @@
 var fs = require('fs');
 var test = require('tape');
+var queue = require('..');
 var sdp = {
   nodata: fs.readFileSync(__dirname + '/sdp/nodata.sdp', 'utf8'),
   all: fs.readFileSync(__dirname + '/sdp/video-audio-data.sdp', 'utf8')
@@ -80,3 +81,54 @@ test('applying the ice candidate succeeds', function(t) {
     t.fail(e);
   }
 });
+
+test('can create a new peer connection', function(t) {
+  t.plan(1);
+  t.ok(pc = new RTCPeerConnection({ iceServers: [] }), 'created');
+});
+
+test('can set the remote description of the pc (2 mlines)', function(t) {
+  t.plan(1);
+  pc.setRemoteDescription(
+    new RTCSessionDescription({ type: 'offer', sdp: sdp.nodata }),
+    t.pass,
+    t.fail
+  );
+});
+
+test('a queue wrapped version of the peer connection will not apply the data candidate', function(t) {
+  var successTimer = setTimeout(t.pass, 1000);
+
+  t.plan(2);
+  t.ok(pc = queue(pc));
+
+  pc.once('ice.remote.applied', function() {
+    clearTimeout(successTimer);
+    t.fail('candidate should not have been applied');
+  });
+
+  pc.addIceCandidate(new RTCIceCandidate(candidateData));
+});
+
+test('can create a new peer connection', function(t) {
+  t.plan(1);
+  t.ok(pc = new RTCPeerConnection({ iceServers: [] }), 'created');
+});
+
+test('can set the remote description of the pc (3 mlines)', function(t) {
+  t.plan(1);
+  pc.setRemoteDescription(
+    new RTCSessionDescription({ type: 'offer', sdp: sdp.all }),
+    t.pass,
+    t.fail
+  );
+});
+
+test('a queue wrapped version of the peer connection will apply the data candidate', function(t) {
+  t.plan(2);
+  t.ok(pc = queue(pc));
+
+  pc.once('ice.remote.applied', t.pass);
+  pc.addIceCandidate(new RTCIceCandidate(candidateData));
+});
+

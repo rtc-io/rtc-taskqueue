@@ -337,7 +337,10 @@ module.exports = function(pc, opts) {
   // patch in the queue helper methods
   tq.addIceCandidate = enqueue('addIceCandidate', applyCandidate, {
     processArgs: extractCandidateEventData,
-    checks: [hasLocalOrRemoteDesc, isValidCandidate, isConnReadyForCandidate ]
+    checks: [hasLocalOrRemoteDesc, isValidCandidate, isConnReadyForCandidate ],
+
+    // set ttl to 5s
+    ttl: 5000
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {

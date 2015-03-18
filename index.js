@@ -107,14 +107,18 @@ module.exports = function(pc, opts) {
     // peek at the next item on the queue
     var next = (! queue.isEmpty()) && queue.peek();
     var ready = next && testReady(next);
-    var retry = (! queue.isEmpty()) && isNotClosed(pc);
 
     // reset the queue timer
     checkQueueTimer = 0;
 
     // if we don't have a task ready, then abort
     if (! ready) {
-      return retry && triggerQueueCheck();
+      // if we have a task and it has expired then dequeue it
+      if (next && expired(next)) {
+        queue.deq();
+      }
+
+      return (! queue.isEmpty()) && isNotClosed(pc) && triggerQueueCheck();
     }
 
     // properly dequeue task
@@ -198,6 +202,9 @@ module.exports = function(pc, opts) {
         name: name,
         fn: handler,
 
+        // record the time at which the task was queued
+        start: Date.now(),
+
         // initilaise any checks that need to be done prior
         // to the task executing
         checks: [ isNotClosed ].concat((opts || {}).checks || []),
@@ -237,6 +244,10 @@ module.exports = function(pc, opts) {
       pc,
       task.args.concat(cbArgs).concat(isOffer ? generateConstraints() : [])
     );
+  }
+
+  function expired(task) {
+    return (typeof task.ttl == 'number') && (task.start + task.ttl < Date.now());
   }
 
   function extractCandidateEventData(data) {

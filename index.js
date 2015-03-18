@@ -58,6 +58,7 @@ module.exports = function(pc, opts) {
 
   // initialise task importance
   var priorities = (opts || {}).priorities || DEFAULT_PRIORITIES;
+  var queueInterval = (opts || {}).interval || 50;
 
   // check for plugin usage
   var plugin = findPlugin((opts || {}).plugins);
@@ -330,7 +331,7 @@ module.exports = function(pc, opts) {
 
   function triggerQueueCheck() {
     if (checkQueueTimer) return;
-    checkQueueTimer = setTimeout(checkQueue, 50);
+    checkQueueTimer = setTimeout(checkQueue, queueInterval);
   }
 
   // patch in the queue helper methods

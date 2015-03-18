@@ -298,13 +298,13 @@ module.exports = function(pc, opts) {
   function isConnReadyForCandidate(pc, data) {
     var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
     var mediaTypes = sdp.getMediaTypes();
-    var candidateMedia = data.args[0] && data.args[0].sdpMid;
+    var sdpMid = data.args[0] && data.args[0].sdpMid;
 
     // remap media types as appropriate
-    candidateMedia = MEDIA_MAPPINGS[candidateMedia] || candidateMedia;
+    sdpMid = MEDIA_MAPPINGS[sdpMid] || sdpMid;
 
     // the candidate is valid if we know about the media type
-    return mediaTypes.indexOf(candidateMedia) >= 0;
+    return (sdpMid === '') || mediaTypes.indexOf(sdpMid) >= 0;
   }
 
   function orderTasks(a, b) {

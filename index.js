@@ -65,7 +65,6 @@ module.exports = function(pc, opts) {
 
   // initialise state tracking
   var checkQueueTimer = 0;
-  var currentTask;
   var defaultFail = tq.bind(tq, 'fail');
 
   // look for an sdpfilter function (allow slight mis-spellings)
@@ -106,7 +105,7 @@ module.exports = function(pc, opts) {
 
   function checkQueue() {
     // peek at the next item on the queue
-    var next = (! queue.isEmpty()) && (! currentTask) && queue.peek();
+    var next = (! queue.isEmpty()) && queue.peek();
     var ready = next && testReady(next);
     var retry = (! queue.isEmpty()) && isNotClosed(pc);
 
@@ -118,14 +117,14 @@ module.exports = function(pc, opts) {
       return retry && triggerQueueCheck();
     }
 
-    // update the current task (dequeue)
-    currentTask = queue.deq();
+    // properly dequeue task
+    next = queue.deq();
 
     // process the task
-    currentTask.fn(currentTask, function(err) {
-      var fail = currentTask.fail || defaultFail;
-      var pass = currentTask.pass;
-      var taskName = currentTask.name;
+    next.fn(next, function(err) {
+      var fail = next.fail || defaultFail;
+      var pass = next.pass;
+      var taskName = next.name;
 
       // if errored, fail
       if (err) {
@@ -134,13 +133,10 @@ module.exports = function(pc, opts) {
       }
 
       if (typeof pass == 'function') {
-        pass.apply(currentTask, [].slice.call(arguments, 1));
+        pass.apply(next, [].slice.call(arguments, 1));
       }
 
-      setTimeout(function() {
-        currentTask = null;
-        triggerQueueCheck();
-      }, 0);
+      triggerQueueCheck();
     });
   }
 

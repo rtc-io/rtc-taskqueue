@@ -1,6 +1,8 @@
 var detect = require('rtc-core/detect');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
+var pluck = require('whisk/pluck');
+var pluckSessionDesc = pluck('sdp', 'type');
 
 // some validation routines
 var checkCandidate = require('rtc-validator/candidate');
@@ -185,7 +187,7 @@ module.exports = function(pc, opts) {
   }
 
   function emitSdp() {
-    tq('sdp.local', this.args[0]);
+    tq('sdp.local', pluckSessionDesc(this.args[0]));
   }
 
   function enqueue(name, handler, opts) {

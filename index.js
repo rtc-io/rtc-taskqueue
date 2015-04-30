@@ -115,6 +115,7 @@ module.exports = function(pc, opts) {
     if (! ready) {
       // if we have a task and it has expired then dequeue it
       if (next && expired(next)) {
+        tq('task.expire', next);
         queue.deq();
       }
 

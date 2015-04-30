@@ -1,10 +1,10 @@
 {
   "name": "rtc-taskqueue",
-  "version": "2.5.1",
+  "version": "2.5.2",
   "description": "An asynchronous task queue that applies actions to an RTCPeerConnection in the most sensible order",
   "main": "index.js",
   "scripts": {
-    "test": "browserify -t brfs test/all.js | broth ./.travis/start-$BROWSER.sh",
+    "test": "browserify -t brfs test/all.js | broth start-$BROWSER | tap-spec",
     "gendocs": "gendocs > README.md"
   },
   "repository": {
@@ -28,7 +28,8 @@
     "rtc-core": "^4.0.0",
     "rtc-sdp": "^1.1.0",
     "rtc-sdpclean": "^1.0.0",
-    "rtc-validator": "^1.0.0"
+    "rtc-validator": "^1.0.0",
+    "whisk": "^1.1.0"
   },
   "devDependencies": {
     "brfs": "^1.4.0",
@@ -36,7 +37,8 @@
     "browserify": "^9.0.3",
     "rtc-core": "^4.0.0",
     "tap-spec": "^2.2.2",
-    "tape": "^3.0.0"
+    "tape": "^3.0.0",
+    "travis-multirunner": "^2.0.9"
   },
   "testling": {
     "files": "test/all.js"

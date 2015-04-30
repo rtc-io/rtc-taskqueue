@@ -38,7 +38,14 @@ test('can create connection:1', function(t) {
 
 test('can wrap the connections in queues', function(t) {
   t.plan(2);
-  queues = connections.map(taskqueue);
+  queues = connections.map(function(conn) {
+    return taskqueue(conn, {
+      sdpfilter: function(sdp) {
+        return sdp;
+      }
+    });
+  });
+
   t.ok(queues[0]);
   t.ok(queues[1]);
 });
@@ -90,7 +97,7 @@ test('can setRemoteDescription on connection:0', function(t) {
 
 ### Apache 2.0
 
-Copyright 2014 National ICT Australia Limited (NICTA)
+Copyright 2015 National ICT Australia Limited (NICTA)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

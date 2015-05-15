@@ -85,6 +85,11 @@ module.exports = function(pc, opts) {
 
   function applyCandidate(task, next) {
     var data = task.args[0];
+    // Allow selective filtering of ICE candidates
+    if (opts && opts.filterCandidate && !opts.filterCandidate(data)) {
+      tq('ice.remote.filtered', candidate);
+      return next();
+    }
     var candidate = data && data.candidate && createIceCandidate(data);
 
     function handleOk() {

@@ -312,15 +312,19 @@ module.exports = function(pc, opts) {
   }
 
   function isConnReadyForCandidate(pc, data) {
-    var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
-    var mediaTypes = sdp.getMediaTypes();
     var sdpMid = data.args[0] && data.args[0].sdpMid;
 
     // remap media types as appropriate
     sdpMid = MEDIA_MAPPINGS[sdpMid] || sdpMid;
 
+    if (sdpMid === '')
+      return true;
+
+    var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
+    var mediaTypes = sdp.getMediaTypes();
+
     // the candidate is valid if we know about the media type
-    return (sdpMid === '') || mediaTypes.indexOf(sdpMid) >= 0;
+    return mediaTypes.indexOf(sdpMid) >= 0;
   }
 
   function orderTasks(a, b) {

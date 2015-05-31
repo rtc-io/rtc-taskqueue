@@ -320,11 +320,13 @@ module.exports = function(pc, opts) {
     if (sdpMid === '')
       return true;
 
-    var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
-    var mediaTypes = sdp.getMediaTypes();
+    if (!pc.__mediaTypes) {
+      var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
+      pc.__mediaTypes = sdp.getMediaTypes();
+    }
 
     // the candidate is valid if we know about the media type
-    return mediaTypes.indexOf(sdpMid) >= 0;
+    return pc.__mediaTypes.indexOf(sdpMid) >= 0;
   }
 
   function orderTasks(a, b) {

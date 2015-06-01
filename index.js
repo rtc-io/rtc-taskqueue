@@ -205,10 +205,13 @@ module.exports = function(pc, opts) {
         args = args.map(opts.processArgs);
       }
 
+      var priority = priorities.indexOf(name);
+
       queue.enq({
         args: args,
         name: name,
         fn: handler,
+        priority: priority >= 0 ? priority : PRIORITY_LOW,
 
         // record the time at which the task was queued
         start: Date.now(),
@@ -335,9 +338,7 @@ module.exports = function(pc, opts) {
     var readiness = tasks.map(testReady);
     var taskPriorities = tasks.map(function(task, idx) {
       var ready = readiness[idx];
-      var priority = ready && priorities.indexOf(task.name);
-
-      return ready ? (priority >= 0 ? priority : PRIORITY_LOW) : PRIORITY_WAIT;
+      return ready ? task.priority : PRIORITY_WAIT;
     });
 
     return taskPriorities[1] - taskPriorities[0];

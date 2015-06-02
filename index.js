@@ -205,10 +205,13 @@ module.exports = function(pc, opts) {
         args = args.map(opts.processArgs);
       }
 
+      var priority = priorities.indexOf(name);
+
       queue.enq({
         args: args,
         name: name,
         fn: handler,
+        priority: priority >= 0 ? priority : PRIORITY_LOW,
 
         // record the time at which the task was queued
         start: Date.now(),
@@ -312,15 +315,21 @@ module.exports = function(pc, opts) {
   }
 
   function isConnReadyForCandidate(pc, data) {
-    var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
-    var mediaTypes = sdp.getMediaTypes();
     var sdpMid = data.args[0] && data.args[0].sdpMid;
 
     // remap media types as appropriate
     sdpMid = MEDIA_MAPPINGS[sdpMid] || sdpMid;
 
+    if (sdpMid === '')
+      return true;
+
+    if (!pc.__mediaTypes) {
+      var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
+      pc.__mediaTypes = sdp.getMediaTypes();
+    }
+
     // the candidate is valid if we know about the media type
-    return (sdpMid === '') || mediaTypes.indexOf(sdpMid) >= 0;
+    return pc.__mediaTypes.indexOf(sdpMid) >= 0;
   }
 
   function orderTasks(a, b) {
@@ -329,9 +338,7 @@ module.exports = function(pc, opts) {
     var readiness = tasks.map(testReady);
     var taskPriorities = tasks.map(function(task, idx) {
       var ready = readiness[idx];
-      var priority = ready && priorities.indexOf(task.name);
-
-      return ready ? (priority >= 0 ? priority : PRIORITY_LOW) : PRIORITY_WAIT;
+      return ready ? task.priority : PRIORITY_WAIT;
     });
 
     return taskPriorities[1] - taskPriorities[0];

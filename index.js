@@ -16,7 +16,7 @@ var PRIORITY_WAIT = 1000;
 
 // priority order (lower is better)
 var DEFAULT_PRIORITIES = [
-  'candidate',
+  'addIceCandidate',
   'setLocalDescription',
   'setRemoteDescription',
   'createAnswer',

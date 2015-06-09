@@ -334,7 +334,7 @@ module.exports = function(pc, opts) {
     }
 
     // the candidate is valid if we know about the media type
-    return pc.__mediaTypes.indexOf(sdpMid) >= 0;
+    return pc.__mediaTypes && pc.__mediaTypes.indexOf(sdpMid) >= 0;
   }
 
   function orderTasks(a, b) {

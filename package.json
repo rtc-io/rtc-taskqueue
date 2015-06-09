@@ -4,7 +4,8 @@
   "description": "An asynchronous task queue that applies actions to an RTCPeerConnection in the most sensible order",
   "main": "index.js",
   "scripts": {
-    "test": "browserify -t brfs test/all.js | broth start-$BROWSER | tap-spec",
+    "test": "browserify -t brfs test/all.js | broth start-$BROWSER | tap-spec && npm run quickconnect-test",
+    "quickconnect-test": "cd ./node_modules/rtc-quickconnect/node_modules/rtc-tools; npm link ../../../../; cd ../../../../; browserify -t brfs test/quickconnect-test.js | broth start-$BROWSER | tap-spec",
     "gendocs": "gendocs > README.md"
   },
   "repository": {
@@ -35,7 +36,12 @@
     "brfs": "^1.4.0",
     "broth": "^2.1.0",
     "browserify": "^9.0.3",
+    "cog": "^1.1.0",
     "rtc-core": "^4.0.0",
+    "rtc-pluggable-signaller": "^2.0.1",
+    "rtc-quickconnect": "^4.3.1",
+    "rtc-quickconnect-test": "^1.2.1",
+    "rtc-switchboard": "^3.0.0",
     "tap-spec": "^3.0.0",
     "tape": "^4.0.0",
     "travis-multirunner": "^2.0.9"

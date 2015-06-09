@@ -325,7 +325,12 @@ module.exports = function(pc, opts) {
 
     if (!pc.__mediaTypes) {
       var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
-      pc.__mediaTypes = sdp.getMediaTypes();
+      // We only want to cache the SDP media types if we've received them, otherwise
+      // bad things can happen
+      var mediaTypes = sdp.getMediaTypes();
+      if (mediaTypes && mediaTypes.length > 0) {
+        pc.__mediaTypes = sdp.getMediaTypes();
+      }
     }
 
     // the candidate is valid if we know about the media type

@@ -139,3 +139,11 @@ test('a queue wrapped version of the peer connection will apply the data candida
   pc.addIceCandidate(new RTCIceCandidate(candidateData));
 });
 
+test('a queue wrapped version of the peer connection will apply the data candidate when set to always parse SDP', function(t) {
+  t.plan(2);
+  t.ok(pc = queue(pc, { sdpParseMode: 'always' }));
+
+  pc.once('ice.remote.applied', t.pass);
+  pc.addIceCandidate(new RTCIceCandidate(candidateData));
+});
+

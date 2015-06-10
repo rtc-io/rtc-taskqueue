@@ -72,6 +72,7 @@ module.exports = function(pc, opts) {
 
   // look for an sdpfilter function (allow slight mis-spellings)
   var sdpFilter = (opts || {}).sdpfilter || (opts || {}).sdpFilter;
+  var alwaysParse = (opts.sdpParseMode === 'always');
 
   // initialise session description and icecandidate objects
   var RTCSessionDescription = (opts || {}).RTCSessionDescription ||
@@ -325,7 +326,7 @@ module.exports = function(pc, opts) {
       return true;
 
     // Allow parsing of SDP always if required
-    if (opts.sdpParseMode === 'always' || !pc.__mediaTypes) {
+    if (alwaysParse || !pc.__mediaTypes) {
       var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
       // We only want to cache the SDP media types if we've received them, otherwise
       // bad things can happen

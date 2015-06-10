@@ -54,6 +54,7 @@ var VALID_RESPONSE_STATES = ['have-remote-offer', 'have-local-pranswer'];
 
 **/
 module.exports = function(pc, opts) {
+  opts = opts || {};
   // create the task queue
   var queue = new PriorityQueue(orderTasks);
   var tq = require('mbus')('', (opts || {}).logger);
@@ -323,7 +324,8 @@ module.exports = function(pc, opts) {
     if (sdpMid === '')
       return true;
 
-    if (!pc.__mediaTypes) {
+    // Allow parsing of SDP always if required
+    if (opts.sdpParseMode === 'always' || !pc.__mediaTypes) {
       var sdp = parseSdp(pc.remoteDescription && pc.remoteDescription.sdp);
       // We only want to cache the SDP media types if we've received them, otherwise
       // bad things can happen

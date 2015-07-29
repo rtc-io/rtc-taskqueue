@@ -39,6 +39,13 @@ var MEDIA_MAPPINGS = {
 var VALID_RESPONSE_STATES = ['have-remote-offer', 'have-local-pranswer'];
 
 /**
+  Allows overriding of a function
+ **/
+function pluggable(pluginFn, defaultFn) {
+  return (pluginFn && typeof pluginFn == 'function' ? pluginFn : defaultFn);
+}
+
+/**
   # rtc-taskqueue
 
   This is a package that assists with applying actions to an `RTCPeerConnection`
@@ -80,6 +87,15 @@ module.exports = function(pc, opts) {
 
   var RTCIceCandidate = (opts || {}).RTCIceCandidate ||
     detect('RTCIceCandidate');
+
+  // Determine plugin overridable methods
+  var createIceCandidate = pluggable(plugin && plugin.createIceCandidate, function(data) {
+    return new RTCIceCandidate(data);
+  });
+
+  var createSessionDescription = pluggable(plugin && plugin.createSessionDescription, function(data) {
+    return new RTCSessionDescription(data);
+  });  
 
   function abortQueue(err) {
     console.error(err);
@@ -177,23 +193,7 @@ module.exports = function(pc, opts) {
     if (VALID_RESPONSE_STATES.indexOf(pc.signalingState) >= 0) {
       return tq.createAnswer();
     }
-  }
-
-  function createIceCandidate(data) {
-    if (plugin && typeof plugin.createIceCandidate == 'function') {
-      return plugin.createIceCandidate(data);
-    }
-
-    return new RTCIceCandidate(data);
-  }
-
-  function createSessionDescription(data) {
-    if (plugin && typeof plugin.createSessionDescription == 'function') {
-      return plugin.createSessionDescription(data);
-    }
-
-    return new RTCSessionDescription(data);
-  }
+  }  
 
   function emitSdp() {
     tq('sdp.local', pluckSessionDesc(this.args[0]));

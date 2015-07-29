@@ -166,7 +166,14 @@ module.exports = function(pc, opts) {
         pass.apply(next, [].slice.call(arguments, 1));
       }
 
-      triggerQueueCheck();
+      // Allow tasks to indicate that processing should continue immediately to the
+      // following task
+      if (next.immediate) {
+        if (checkQueueTimer) clearTimeout(checkQueueTimer);
+        return checkQueue();
+      } else {
+        triggerQueueCheck();
+      }
     });
   }
 
@@ -214,6 +221,7 @@ module.exports = function(pc, opts) {
         name: name,
         fn: handler,
         priority: priority >= 0 ? priority : PRIORITY_LOW,
+        immediate: opts.immediate,
 
         // record the time at which the task was queued
         start: Date.now(),
@@ -246,7 +254,7 @@ module.exports = function(pc, opts) {
       tq.apply(tq, [ ['negotiate', eventName, 'ok'], task.name ].concat(task.args));
       next.apply(null, [null].concat([].slice.call(arguments)));
     }
-
+  
     if (! fn) {
       return next(new Error('cannot call "' + task.name + '" on RTCPeerConnection'));
     }
@@ -370,7 +378,8 @@ module.exports = function(pc, opts) {
     checks: [hasLocalOrRemoteDesc, isValidCandidate, isConnReadyForCandidate ],
 
     // set ttl to 5s
-    ttl: 5000
+    ttl: 5000,
+    immediate: true
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {

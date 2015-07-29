@@ -4,7 +4,7 @@
   "description": "An asynchronous task queue that applies actions to an RTCPeerConnection in the most sensible order",
   "main": "index.js",
   "scripts": {
-    "test": "browserify -t brfs test/all.js | broth start-$BROWSER | tap-spec",
+    "test": "browserify -t brfs test/all.js | broth start | tap-spec",
     "gendocs": "gendocs > README.md"
   },
   "repository": {
@@ -38,7 +38,7 @@
     "rtc-core": "^4.0.0",
     "tap-spec": "^3.0.0",
     "tape": "^4.0.0",
-    "travis-multirunner": "^2.0.9"
+    "travis-multirunner": "^2.7.0"
   },
   "testling": {
     "files": "test/all.js"

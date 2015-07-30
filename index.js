@@ -139,7 +139,7 @@ module.exports = function(pc, opts) {
     // if we don't have a task ready, then abort
     if (! ready) {
       // if we have a task and it has expired then dequeue it
-      if (next && expired(next)) {
+      if (next && (aborted(next) || expired(next))) {
         tq('task.expire', next);
         queue.deq();
       }
@@ -197,6 +197,11 @@ module.exports = function(pc, opts) {
   }
 
   function completeConnection() {
+    // Clean any cached media types now that we have potentially new remote description
+    if (pc.__mediaTypes) {
+      delete pc.__mediaTypes;
+    }
+
     if (VALID_RESPONSE_STATES.indexOf(pc.signalingState) >= 0) {
       return tq.createAnswer();
     }
@@ -222,6 +227,8 @@ module.exports = function(pc, opts) {
         fn: handler,
         priority: priority >= 0 ? priority : PRIORITY_LOW,
         immediate: opts.immediate,
+        // If aborted, the task will be removed
+        aborted: false,
 
         // record the time at which the task was queued
         start: Date.now(),
@@ -269,6 +276,10 @@ module.exports = function(pc, opts) {
 
   function expired(task) {
     return (typeof task.ttl == 'number') && (task.start + task.ttl < Date.now());
+  }
+
+  function aborted(task) {
+    return task && task.aborted;
   }
 
   function extractCandidateEventData(data) {
@@ -343,9 +354,13 @@ module.exports = function(pc, opts) {
         pc.__mediaTypes = sdp.getMediaTypes();
       }
     }
-
     // the candidate is valid if we know about the media type
-    return pc.__mediaTypes && pc.__mediaTypes.indexOf(sdpMid) >= 0;
+    var validMediaType = pc.__mediaTypes && pc.__mediaTypes.indexOf(sdpMid) >= 0;
+    // Otherwise we abort the task
+    if (!validMediaType) {
+      data.aborted = true;
+    }
+    return validMediaType;
   }
 
   function orderTasks(a, b) {

@@ -4,7 +4,8 @@
   "description": "An asynchronous task queue that applies actions to an RTCPeerConnection in the most sensible order",
   "main": "index.js",
   "scripts": {
-    "test": "browserify -t brfs test/all.js | broth start | tap-spec && npm run quickconnect-test",
+    "test": "npm run queue-test && npm run quickconnect-test",
+    "queue-test": "browserify -t brfs test/all.js | broth start",
     "quickconnect-test": "cd ./node_modules/rtc-quickconnect/node_modules/rtc-tools; npm link ../../../../; cd ../../../../; browserify -t brfs test/quickconnect-test.js | broth start | tap-spec",
     "gendocs": "gendocs > README.md"
   },

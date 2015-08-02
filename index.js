@@ -39,6 +39,13 @@ var MEDIA_MAPPINGS = {
 var VALID_RESPONSE_STATES = ['have-remote-offer', 'have-local-pranswer'];
 
 /**
+  Allows overriding of a function
+ **/
+function pluggable(pluginFn, defaultFn) {
+  return (pluginFn && typeof pluginFn == 'function' ? pluginFn : defaultFn);
+}
+
+/**
   # rtc-taskqueue
 
   This is a package that assists with applying actions to an `RTCPeerConnection`
@@ -61,7 +68,7 @@ module.exports = function(pc, opts) {
 
   // initialise task importance
   var priorities = (opts || {}).priorities || DEFAULT_PRIORITIES;
-  var queueInterval = (opts || {}).interval || 50;
+  var queueInterval = (opts || {}).interval || 10;
 
   // check for plugin usage
   var plugin = findPlugin((opts || {}).plugins);
@@ -80,6 +87,15 @@ module.exports = function(pc, opts) {
 
   var RTCIceCandidate = (opts || {}).RTCIceCandidate ||
     detect('RTCIceCandidate');
+
+  // Determine plugin overridable methods
+  var createIceCandidate = pluggable(plugin && plugin.createIceCandidate, function(data) {
+    return new RTCIceCandidate(data);
+  });
+
+  var createSessionDescription = pluggable(plugin && plugin.createSessionDescription, function(data) {
+    return new RTCSessionDescription(data);
+  });  
 
   function abortQueue(err) {
     console.error(err);
@@ -123,7 +139,7 @@ module.exports = function(pc, opts) {
     // if we don't have a task ready, then abort
     if (! ready) {
       // if we have a task and it has expired then dequeue it
-      if (next && expired(next)) {
+      if (next && (aborted(next) || expired(next))) {
         tq('task.expire', next);
         queue.deq();
       }
@@ -150,7 +166,14 @@ module.exports = function(pc, opts) {
         pass.apply(next, [].slice.call(arguments, 1));
       }
 
-      triggerQueueCheck();
+      // Allow tasks to indicate that processing should continue immediately to the
+      // following task
+      if (next.immediate) {
+        if (checkQueueTimer) clearTimeout(checkQueueTimer);
+        return checkQueue();
+      } else {
+        triggerQueueCheck();
+      }
     });
   }
 
@@ -174,26 +197,15 @@ module.exports = function(pc, opts) {
   }
 
   function completeConnection() {
+    // Clean any cached media types now that we have potentially new remote description
+    if (pc.__mediaTypes) {
+      delete pc.__mediaTypes;
+    }
+
     if (VALID_RESPONSE_STATES.indexOf(pc.signalingState) >= 0) {
       return tq.createAnswer();
     }
-  }
-
-  function createIceCandidate(data) {
-    if (plugin && typeof plugin.createIceCandidate == 'function') {
-      return plugin.createIceCandidate(data);
-    }
-
-    return new RTCIceCandidate(data);
-  }
-
-  function createSessionDescription(data) {
-    if (plugin && typeof plugin.createSessionDescription == 'function') {
-      return plugin.createSessionDescription(data);
-    }
-
-    return new RTCSessionDescription(data);
-  }
+  }  
 
   function emitSdp() {
     tq('sdp.local', pluckSessionDesc(this.args[0]));
@@ -214,6 +226,9 @@ module.exports = function(pc, opts) {
         name: name,
         fn: handler,
         priority: priority >= 0 ? priority : PRIORITY_LOW,
+        immediate: opts.immediate,
+        // If aborted, the task will be removed
+        aborted: false,
 
         // record the time at which the task was queued
         start: Date.now(),
@@ -246,7 +261,7 @@ module.exports = function(pc, opts) {
       tq.apply(tq, [ ['negotiate', eventName, 'ok'], task.name ].concat(task.args));
       next.apply(null, [null].concat([].slice.call(arguments)));
     }
-
+  
     if (! fn) {
       return next(new Error('cannot call "' + task.name + '" on RTCPeerConnection'));
     }
@@ -261,6 +276,10 @@ module.exports = function(pc, opts) {
 
   function expired(task) {
     return (typeof task.ttl == 'number') && (task.start + task.ttl < Date.now());
+  }
+
+  function aborted(task) {
+    return task && task.aborted;
   }
 
   function extractCandidateEventData(data) {
@@ -335,9 +354,13 @@ module.exports = function(pc, opts) {
         pc.__mediaTypes = sdp.getMediaTypes();
       }
     }
-
     // the candidate is valid if we know about the media type
-    return pc.__mediaTypes && pc.__mediaTypes.indexOf(sdpMid) >= 0;
+    var validMediaType = pc.__mediaTypes && pc.__mediaTypes.indexOf(sdpMid) >= 0;
+    // Otherwise we abort the task
+    if (!validMediaType) {
+      data.aborted = true;
+    }
+    return validMediaType;
   }
 
   function orderTasks(a, b) {
@@ -370,7 +393,8 @@ module.exports = function(pc, opts) {
     checks: [hasLocalOrRemoteDesc, isValidCandidate, isConnReadyForCandidate ],
 
     // set ttl to 5s
-    ttl: 5000
+    ttl: 5000,
+    immediate: true
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {

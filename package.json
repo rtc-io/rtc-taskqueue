@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npm run queue-test && npm run quickconnect-test",
-    "queue-test": "browserify -t brfs test/all.js | broth start-$BROWSER",
+    "queue-test": "browserify -t brfs test/all.js | broth start",
     "quickconnect-test": "cd ./node_modules/rtc-quickconnect/node_modules/rtc-tools; npm link ../../../../; cd ../../../../; browserify -t brfs test/quickconnect-test.js | broth start-$BROWSER | tap-spec",
     "gendocs": "gendocs > README.md"
   },

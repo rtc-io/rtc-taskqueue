@@ -199,7 +199,8 @@ module.exports = function(pc, opts) {
   function completeConnection() {
     // Clean any cached media types now that we have potentially new remote description
     if (pc.__mediaTypes) {
-      delete pc.__mediaTypes;
+      // Set defined as opposed to delete, for compatibility purposes
+      pc.__mediaTypes = undefined;
     }
 
     if (VALID_RESPONSE_STATES.indexOf(pc.signalingState) >= 0) {

@@ -67,9 +67,11 @@ test('can setRemoteDescription on connection:1', function(t) {
 });
 
 test('can setRemoteDescription on connection:0', function(t) {
-  t.plan(2);
+  t.plan(3);
   waitConnected(connections[0], t.pass.bind(t, 'connection:0 connected'));
   waitConnected(connections[1], t.pass.bind(t, 'connection:1 connected'));
 
-  queues[0].setRemoteDescription(answerSdp);
+  queues[0].setRemoteDescription(answerSdp).then(function() {
+    t.pass('promise resolved');
+  });
 });

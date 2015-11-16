@@ -1,6 +1,7 @@
 var detect = require('rtc-core/detect');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
+var Promise = require('es6-promise').Promise;
 var pluck = require('whisk/pluck');
 var pluckSessionDesc = pluck('sdp', 'type');
 
@@ -96,6 +97,8 @@ module.exports = function(pc, opts) {
   var createSessionDescription = pluggable(plugin && plugin.createSessionDescription, function(data) {
     return new RTCSessionDescription(data);
   });
+
+  var qid = tq._qid = Math.floor(Math.random() * 100000);
 
   function abortQueue(err) {
     console.error(err);
@@ -222,28 +225,40 @@ module.exports = function(pc, opts) {
 
       var priority = priorities.indexOf(name);
 
-      queue.enq({
-        args: args,
-        name: name,
-        fn: handler,
-        priority: priority >= 0 ? priority : PRIORITY_LOW,
-        immediate: opts.immediate,
-        // If aborted, the task will be removed
-        aborted: false,
+      return new Promise(function(resolve, reject) {
+          queue.enq({
+          args: args,
+          name: name,
+          fn: handler,
+          priority: priority >= 0 ? priority : PRIORITY_LOW,
+          immediate: opts.immediate,
+          // If aborted, the task will be removed
+          aborted: false,
 
-        // record the time at which the task was queued
-        start: Date.now(),
+          // record the time at which the task was queued
+          start: Date.now(),
 
-        // initilaise any checks that need to be done prior
-        // to the task executing
-        checks: [ isNotClosed ].concat((opts || {}).checks || []),
+          // initilaise any checks that need to be done prior
+          // to the task executing
+          checks: [ isNotClosed ].concat((opts || {}).checks || []),
 
-        // initialise the pass and fail handlers
-        pass: (opts || {}).pass,
-        fail: (opts || {}).fail
+          // initialise the pass and fail handlers
+          pass: function() {
+            if (opts && opts.pass) {
+              opts.pass.apply(this, arguments);
+            }
+            resolve();
+          },
+          fail: function() {
+            if (opts && opts.fail) {
+              opts.fail.apply(this, arguments);
+            }
+            reject();
+          }
+        });
+
+        triggerQueueCheck();
       });
-
-      triggerQueueCheck();
     };
   }
 
@@ -332,8 +347,14 @@ module.exports = function(pc, opts) {
   }
 
   function isValidCandidate(pc, data) {
-    return data.__valid ||
-      (data.__valid = checkCandidate(data.args[0]).length === 0);
+    var validCandidate = (data.__valid ||
+      (data.__valid = checkCandidate(data.args[0]).length === 0));
+
+    // If the candidate is not valid, abort
+    if (!validCandidate) {
+      data.aborted = true;
+    }
+    return validCandidate;
   }
 
   function isConnReadyForCandidate(pc, data) {

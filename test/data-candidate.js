@@ -121,10 +121,12 @@ test('can create a new peer connection', function(t) {
 });
 
 test('can set the remote description of the pc (3 mlines)', function(t) {
-  t.plan(2);
+  t.plan(3);
   t.ok(pc = queue(pc));
   pc.once('negotiate.setremotedesc.ok', t.pass);
-  pc.setRemoteDescription({ type: 'offer', sdp: sdp.all });
+  pc.setRemoteDescription({ type: 'offer', sdp: sdp.all }).then(function() {
+    t.pass('promise resolved');
+  });
 });
 
 test('a queue wrapped version of the peer connection will apply the data candidate', function(t) {

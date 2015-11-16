@@ -347,8 +347,14 @@ module.exports = function(pc, opts) {
   }
 
   function isValidCandidate(pc, data) {
-    return data.__valid ||
-      (data.__valid = checkCandidate(data.args[0]).length === 0);
+    var validCandidate = (data.__valid ||
+      (data.__valid = checkCandidate(data.args[0]).length === 0));
+
+    // If the candidate is not valid, abort
+    if (!validCandidate) {
+      data.aborted = true;
+    }
+    return validCandidate;
   }
 
   function isConnReadyForCandidate(pc, data) {

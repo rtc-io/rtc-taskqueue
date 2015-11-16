@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/rtc-io/rtc-taskqueue",
   "dependencies": {
+    "es6-promise": "^3.0.2",
     "mbus": "^2.0.0",
     "priorityqueuejs": "^1.0.0",
     "rtc-core": "^4.0.0",

@@ -29,7 +29,7 @@
     "mbus": "^2.0.0",
     "priorityqueuejs": "^1.0.0",
     "rtc-core": "^4.0.0",
-    "rtc-sdp": "^1.1.0",
+    "rtc-sdp": "^1.2.0",
     "rtc-sdpclean": "^1.0.0",
     "rtc-validator": "^1.0.0",
     "whisk": "^1.1.0"

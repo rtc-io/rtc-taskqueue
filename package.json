@@ -46,7 +46,7 @@
     "rtc-switchboard": "^3.0.0",
     "tap-spec": "^3.0.0",
     "tape": "^4.0.0",
-    "travis-multirunner": "^2.7.0"
+    "travis-multirunner": "^3.0.0"
   },
   "testling": {
     "files": "test/all.js"

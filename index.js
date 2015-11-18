@@ -201,8 +201,9 @@ module.exports = function(pc, opts) {
 
   function completeConnection() {
     // Clean any cached media types now that we have potentially new remote description
-    if (pc.__mediaTypes) {
+    if (pc.__mediaIDs || pc.__mediaTypes) {
       // Set defined as opposed to delete, for compatibility purposes
+      pc.__mediaIDs = undefined;
       pc.__mediaTypes = undefined;
     }
 
@@ -320,6 +321,21 @@ module.exports = function(pc, opts) {
       OfferToReceiveAudio: true
     };
 
+    // Handle mozillas slightly different constraint requirements that are
+    // enforced as of FF43
+    if (detect.moz) {
+      allowedKeys = {
+        offertoreceivevideo: 'offerToReceiveVideo',
+        offertoreceiveaudio: 'offerToReceiveAudio',
+        icerestart: 'iceRestart',
+        voiceactivitydetection: 'voiceActivityDetection'
+      };
+      constraints = {
+        offerToReceiveVideo: true,
+        offerToReceiveAudio: true
+      };
+    }
+
     // update known keys to match
     Object.keys(opts || {}).forEach(function(key) {
       if (allowedKeys[key.toLowerCase()]) {
@@ -327,7 +343,7 @@ module.exports = function(pc, opts) {
       }
     });
 
-    return { mandatory: constraints };
+    return (detect.moz ? constraints : { mandatory: constraints });
   }
 
   function hasLocalOrRemoteDesc(pc, task) {
@@ -373,16 +389,25 @@ module.exports = function(pc, opts) {
       // bad things can happen
       var mediaTypes = sdp.getMediaTypes();
       if (mediaTypes && mediaTypes.length > 0) {
-        pc.__mediaTypes = sdp.getMediaTypes();
+        pc.__mediaTypes = mediaTypes;
+      }
+      // Same for media IDs
+      var mediaIDs = sdp.getMediaIDs();
+      if (mediaIDs && mediaIDs.length > 0) {
+        pc.__mediaIDs = mediaIDs;
       }
     }
-    // the candidate is valid if we know about the media type
-    var validMediaType = pc.__mediaTypes && pc.__mediaTypes.indexOf(sdpMid) >= 0;
+    // the candidate is valid if the sdpMid matches either a known media
+    // type, or media ID
+    var validMediaCandidate =
+      (pc.__mediaIDs && pc.__mediaIDs.indexOf(sdpMid) >= 0) ||
+      (pc.__mediaTypes && pc.__mediaTypes.indexOf(sdpMid) >= 0);
+
     // Otherwise we abort the task
-    if (!validMediaType) {
+    if (!validMediaCandidate) {
       data.aborted = true;
     }
-    return validMediaType;
+    return validMediaCandidate;
   }
 
   function orderTasks(a, b) {

@@ -2,6 +2,7 @@ var detect = require('rtc-core/detect');
 var findPlugin = require('rtc-core/plugin');
 var PriorityQueue = require('priorityqueuejs');
 var Promise = require('es6-promise').Promise;
+var Interop = require('sdp-interop').Interop;
 var pluck = require('whisk/pluck');
 var pluckSessionDesc = pluck('sdp', 'type');
 
@@ -88,6 +89,8 @@ module.exports = function(pc, opts) {
 
   var RTCIceCandidate = (opts || {}).RTCIceCandidate ||
     detect('RTCIceCandidate');
+
+  var interop = navigator.mozGetUserMedia && new Interop();
 
   // Determine plugin overridable methods
   var createIceCandidate = pluggable(plugin && plugin.createIceCandidate, function(data) {
@@ -197,6 +200,16 @@ module.exports = function(pc, opts) {
     }
 
     return desc;
+  }
+
+  function prepareDescription(desc) {
+    if (!interop || !desc || !desc.sdp) return desc;
+    return interop.toUnifiedPlan(desc);
+  }
+
+  function setLocalDescription(desc) {
+    if (interop) desc = interop.toPlanB(desc);
+    tq.setLocalDescription(desc);
   }
 
   function completeConnection() {
@@ -445,22 +458,22 @@ module.exports = function(pc, opts) {
   });
 
   tq.setLocalDescription = enqueue('setLocalDescription', execMethod, {
-    processArgs: cleansdp,
+    processArgs: cleansdp, prepareDescription,
     pass: emitSdp
   });
 
   tq.setRemoteDescription = enqueue('setRemoteDescription', execMethod, {
-    processArgs: createSessionDescription,
+    processArgs: createSessionDescription, prepareDescription,
     pass: completeConnection
   });
 
   tq.createOffer = enqueue('createOffer', execMethod, {
     checks: [ isNotNegotiating ],
-    pass: tq.setLocalDescription
+    pass: setLocalDescription
   });
 
   tq.createAnswer = enqueue('createAnswer', execMethod, {
-    pass: tq.setLocalDescription
+    pass: setLocalDescription
   });
 
   return tq;

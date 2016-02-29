@@ -32,6 +32,7 @@
     "rtc-sdp": "^1.2.0",
     "rtc-sdpclean": "^1.0.0",
     "rtc-validator": "^1.0.0",
+    "sdp-interop": "^0.1.11",
     "whisk": "^1.1.0"
   },
   "devDependencies": {
